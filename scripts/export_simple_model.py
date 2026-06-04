@@ -18,6 +18,6 @@ result = fx.export_and_import(model, example, output_type="torch")
 mlir_text = result.operation.get_asm()
 print(mlir_text)
 
-with open("simple_model.mlir", "w") as f:
+with open("mlir/exported/simple_model.mlir", "w") as f:
     f.write(mlir_text)
-print("\n[OK] Written to simple_model.mlir")
+print("\n[OK] Written to mlir/exported/simple_model.mlir")
