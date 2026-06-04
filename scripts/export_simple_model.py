@@ -1,23 +1,52 @@
-"""Export a simple PyTorch linear+relu model to Torch Dialect MLIR."""
+"""W3: Batch-export simple PyTorch models to Torch Dialect MLIR.
+
+Usage:
+    conda activate novel_llm
+    python scripts/export_simple_model.py
+"""
+import sys
+from pathlib import Path
+
 import torch
 from torch_mlir import fx
 
-class SimpleModel(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.linear = torch.nn.Linear(2, 3)
+# Add project root to path for model imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-    def forward(self, x):
-        return torch.relu(self.linear(x))
+from models.simple_models import MODELS  # noqa: E402
 
-model = SimpleModel()
-model.eval()
-example = torch.randn(1, 2)
+OUTPUT_DIR = Path("mlir/exported")
 
-result = fx.export_and_import(model, example, output_type="torch")
-mlir_text = result.operation.get_asm()
-print(mlir_text)
 
-with open("mlir/exported/simple_model.mlir", "w") as f:
-    f.write(mlir_text)
-print("\n[OK] Written to mlir/exported/simple_model.mlir")
+def export_model(name: str, model_cls: type) -> str:
+    """Export a PyTorch model to Torch Dialect MLIR, return the MLIR text."""
+    model = model_cls()
+    model.eval()
+    example = model.example_input
+
+    result = fx.export_and_import(model, example, output_type="torch")
+    return result.operation.get_asm()
+
+
+def main() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    for name, model_cls in MODELS.items():
+        print(f"[{name}] exporting...", end=" ", flush=True)
+        try:
+            mlir_text = export_model(name, model_cls)
+        except Exception as e:
+            print(f"FAILED: {e}")
+            continue
+
+        out_path = OUTPUT_DIR / f"{name}.mlir"
+        out_path.write_text(mlir_text)
+        n_lines = mlir_text.count("\n") + 1
+        n_funcs = mlir_text.count("func.func @")
+        print(f"OK → {out_path} ({n_lines} lines, {n_funcs} functions)")
+
+    print(f"\nAll exports written to {OUTPUT_DIR.resolve()}/")
+
+
+if __name__ == "__main__":
+    main()
