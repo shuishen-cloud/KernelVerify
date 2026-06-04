@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Conda
+.environment/
+
+# ONNX models (large binaries)
+*.onnx
+
+# MLIR artifacts
+*.mlir.tmp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/llvm-project/
+/torch-mlir/
+/onnx-mlir/
