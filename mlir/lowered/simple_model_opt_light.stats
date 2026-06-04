@@ -1,0 +1,13 @@
+file:       mlir/exported//simple_model.mlir
+preset:     light
+passes:     --canonicalize --cse
+lowered:    mlir/lowered/simple_model_lowered.mlir
+optimized:  mlir/lowered/simple_model_opt_light.mlir
+linalg_ops_before: 7
+linalg_ops_after:  7
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  6
+arith_ops_after:   6

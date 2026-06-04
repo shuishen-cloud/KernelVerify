@@ -1,0 +1,13 @@
+file:       mlir/exported//linear_relu.mlir
+preset:     default
+passes:     --linalg-fuse-elementwise-ops --canonicalize --cse
+lowered:    mlir/lowered/linear_relu_lowered.mlir
+optimized:  mlir/lowered/linear_relu_opt_default.mlir
+linalg_ops_before: 7
+linalg_ops_after:  5
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  6
+arith_ops_after:   6

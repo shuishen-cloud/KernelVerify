@@ -1,0 +1,13 @@
+file:       mlir/exported//two_layer_mlp.mlir
+preset:     default
+passes:     --linalg-fuse-elementwise-ops --canonicalize --cse
+lowered:    mlir/lowered/two_layer_mlp_lowered.mlir
+optimized:  mlir/lowered/two_layer_mlp_opt_default.mlir
+linalg_ops_before: 12
+linalg_ops_after:  10
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  9
+arith_ops_after:   9

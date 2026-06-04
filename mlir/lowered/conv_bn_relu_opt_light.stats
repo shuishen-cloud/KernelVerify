@@ -1,0 +1,13 @@
+file:       mlir/exported//conv_bn_relu.mlir
+preset:     light
+passes:     --canonicalize --cse
+lowered:    mlir/lowered/conv_bn_relu_lowered.mlir
+optimized:  mlir/lowered/conv_bn_relu_opt_light.mlir
+linalg_ops_before: 18
+linalg_ops_after:  18
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  17
+arith_ops_after:   17

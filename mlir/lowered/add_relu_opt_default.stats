@@ -1,0 +1,13 @@
+file:       mlir/handwritten//add_relu.mlir
+preset:     default
+passes:     --linalg-fuse-elementwise-ops --canonicalize --cse
+lowered:    mlir/lowered/add_relu_lowered.mlir
+optimized:  mlir/lowered/add_relu_opt_default.mlir
+linalg_ops_before: 4
+linalg_ops_after:  2
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  4
+arith_ops_after:   4

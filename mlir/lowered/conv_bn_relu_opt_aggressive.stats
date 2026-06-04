@@ -1,0 +1,13 @@
+file:       mlir/exported//conv_bn_relu.mlir
+preset:     aggressive
+passes:     --linalg-fuse-elementwise-ops --linalg-generalize-named-ops --canonicalize --cse --eliminate-empty-tensors
+lowered:    mlir/lowered/conv_bn_relu_lowered.mlir
+optimized:  mlir/lowered/conv_bn_relu_opt_aggressive.mlir
+linalg_ops_before: 18
+linalg_ops_after:  14
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  17
+arith_ops_after:   31

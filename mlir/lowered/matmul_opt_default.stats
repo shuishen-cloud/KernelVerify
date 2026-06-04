@@ -1,0 +1,13 @@
+file:       mlir/handwritten//matmul.mlir
+preset:     default
+passes:     --linalg-fuse-elementwise-ops --canonicalize --cse
+lowered:    mlir/lowered/matmul_lowered.mlir
+optimized:  mlir/lowered/matmul_opt_default.mlir
+linalg_ops_before: 2
+linalg_ops_after:  2
+scf_ops_before:    0
+0
+scf_ops_after:     0
+0
+arith_ops_before:  1
+arith_ops_after:   1
