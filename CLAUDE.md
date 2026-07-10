@@ -70,7 +70,7 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W5 优化效果对比 | ✅ | 平均 25.8% linalg op 降低，最高 50% (add_relu) |
 | W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，0 torch.operator 兜底，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
-| W8 总结报告 | ⏳ | 待阶段二完成后汇总 |
+| W8 总结报告 | ✅ | 全项目汇总报告已完成，见 `work/总结报告.md` |
 
 ## 关键发现
 
