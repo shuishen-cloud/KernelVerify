@@ -1,6 +1,6 @@
 # 优化效果对比报告 — GPT-2
 
-> 阶段二输出，极小 GPT-2 (2层/128维/6.8M 参数) 的 lowering + 优化效果分析
+> 阶段二输出，对比极小 GPT-2 vs 标准 GPT-2 的 lowering + 优化效果
 
 ---
 
@@ -58,37 +58,45 @@
 
 这些是元数据/reshape 操作，不参与 elementwise 融合，保持不变。
 
-## 四、与阶段一对比
+## 四、标准 GPT-2 优化效果 (12层/768维/124M)
 
-| 指标 | 阶段一 (6 简单模型) | 阶段二 (GPT-2 tiny) |
-|------|:---:|:---:|
-| 平均 linalg op 降低 | 25.8% | **52.3%** |
-| 最高单模型降低 | 50% (add_relu) | 52.3% |
-| 最优策略 | fuse+cse+canon | fuse+cse+canon |
-| 关键差异 | matmul 少，融合机会少 | **matmul→generic→融合** 链路额外收益 |
+| IR 阶段 | linalg.generic | matmul | batch_matmul | fill | transpose | index | **总计** |
+|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 优化前 (Linalg) | 583 | 48 | 24 | 9 | 60 | 15 | **739** |
+| 优化后 (fuse+cse+canon) | 237 | 0 | 0 | 9 | 60 | 5 | **311** |
+| **变化** | ↓346 (-59.3%) | ↓48 (-100%) | ↓24 (-100%) | =0 | =0 | ↓10 (-66.7%) | **↓428 (57.9%)** |
 
-**结论**：GPT-2 的优化效果 (52.3%) 远超简单模型 (25.8%)，原因是 GPT-2 有更密集的 matmul+elementwise 组合，融合机会更多。
+**总 linalg ops 降低 57.9%**（包括 yield 则为 58.5%，1322→548），再次超过极小模型的 52.3%。
 
-## 五、优化前关键 op 明细
+## 五、两种规模对比
 
-| Op | 数量 | 来源 |
-|----|:---:|------|
-| linalg.generic | 113 | BN/LN 统计量、GELU 分解、softmax、mask、add 等 |
-| linalg.matmul | 8 | QKV 投影 (c_attn)、输出投影 (c_proj)、FFN (c_fc/c_proj) |
-| linalg.batch_matmul | 4 | attention score 计算 (Q@K^T, attn@V) |
-| linalg.fill | 9 | 零初始化临时 tensor |
-| linalg.transpose | 10 | head 拆分/合并、permute |
-| linalg.index | 5 | embedding 查表 |
+| 指标 | 极小 GPT-2 | 标准 GPT-2 | 趋势 |
+|------|:---:|:---:|:---:|
+| 配置 | 2层/128维 | 12层/768维 | 6× |
+| 参数量 | 6.8M | 124M | 18× |
+| IR 行数 | 785 | 3,794 | 4.8× |
+| 优化前 linalg ops | 149 | 739 | 5× |
+| 优化后 linalg ops | 71 | 311 | 4.4× |
+| **降低比例** | **52.3%** | **57.9%** | ↑ |
+| generic 融合 | 113→47 (-58%) | 583→237 (-59.3%) | ↑ |
+| matmul 融合 | 12→0 | 72→0 | 全融合 |
 
-## 六、局限
+**趋势：模型越大，融合机会越多，优化比例越高。**
 
-1. **极小配置**：2 层 128 维远小于标准 GPT-2 (12 层 768 维)，优化比例可能随规模变化
-2. **固定序列长度** (8)：循环被展开，无 `scf.for` 循环融合测试
-3. **优化后 matmul=0 的隐忧**：命名 matmul → generic 后失去 BLAS 库加速机会，实际执行性能需 runtime 验证
-4. **这是 IR 级别的静态分析**：op 数量减少 ≠ 实际 wall-clock 加速，需 IREE/MLIR 执行引擎测量
+## 六、与阶段一对比
 
-## 七、下一步
+| 指标 | 阶段一 (6 简单模型) | 极小 GPT-2 | 标准 GPT-2 |
+|------|:---:|:---:|:---:|
+| linalg op 降低 | 25.8% (平均) | 52.3% | **57.9%** |
+| 最高单模型降低 | 50% (add_relu) | - | - |
+| 最优策略 | fuse+cse+canon | fuse+cse+canon | fuse+cse+canon |
+| 关键差异 | matmul 少，融合机会少 | matmul→generic→融合 | 更大规模=更多融合 |
 
-- [ ] 在标准 GPT-2 (12层/768维) 上重复此实验
-- [ ] 使用 IREE 或其他 runtime 测量实际推理时间
-- [ ] 对比 `generalize-named-ops` 启用/禁用的 GELU-level 性能差异
+**结论**：MLIR Linalg 优化对真实 NLP 模型的效果远超简单模型，且呈**规模递增**趋势。
+
+## 七、局限
+
+1. **固定序列长度** (4/8)：循环被展开，无 `scf.for` 循环融合测试
+2. **优化后 matmul=0 的隐忧**：命名 matmul → generic 后失去 BLAS 库加速机会，实际执行性能需 runtime 验证
+3. **这是 IR 级别的静态分析**：op 数量减少 ≠ 实际 wall-clock 加速，需 IREE/MLIR 执行引擎测量
+4. **IR 文件过大**：标准 GPT-2 的 IR 达 950MB（权重内联），不适合文本对比分析
