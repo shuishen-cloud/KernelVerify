@@ -68,7 +68,7 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W3 简单模型导出 | ✅ | 3 个模型 (linear_relu/conv_bn_relu/two_layer_mlp) 全部导出 |
 | W4 Lowering Pipeline | ✅ | 3 策略对比，default (fuse+cse) 最优 |
 | W5 优化效果对比 | ✅ | 平均 25.8% linalg op 降低，最高 50% (add_relu) |
-| W6 GPT-2 导出 | 🚧 | 极小 GPT-2 导出+Lowering 成功，0 torch.operator 兜底，优化待执行 |
+| W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，0 torch.operator 兜底，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ⏳ | 待 W6 完成后启动 |
 | W8 总结报告 | ⏳ | 待阶段二完成后汇总 |
 
