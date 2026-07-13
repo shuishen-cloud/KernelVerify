@@ -24,6 +24,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Downloaded model cache
+models/.cache/
+
 # Build artifacts
 /llvm-project/
 /torch-mlir/
