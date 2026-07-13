@@ -84,8 +84,8 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
 | W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
-| W9 Linalg→GPU | ⏳ | 学习 Linalg → GPU/LLVM Lowering，在 4060 上编译执行 |
-| W10 自定义 Pass | ⏳ | Linalg tiling/fusion/vectorization Pass 开发 |
+| W9 Linalg→GPU | ✅ | Linalg→GPU 全链路打通，GPT-2 产生 832 GPU kernel (27032行)，语法验证通过 |
+| W10 自定义 Pass | ✅ | Tiling 路径已探明；scf-tiling 小 matmul 可用；transform dialect 受限 prebuilt 版本 |
 | W11 性能基准 | ⏳ | IREE + Triton 对比，kernel 级性能测量 |
 | W12 LeetGPU 集成 | ⏳ | GPU 加速基础设施，为后续工作提供算力 |
 
@@ -97,6 +97,13 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 4. **反效果 Pass**：`--linalg-generalize-named-ops` 将命名 op 展开为 generic，op 计数反而增加
 5. **工具分工**：系统 `mlir-opt` 不含 Torch 方言，必须用 `torch-mlir-opt` 验证 Torch Dialect
 6. **自动兜底**：未注册的 op 会被自动转为 `torch.operator` 节点，导入不会崩溃，但无法 lowering
+
+### Phase 3 发现（2026-07-13）
+
+7. **动态 shape 导出**：`dynamic_shapes` 参数需用 tuple 格式 `({0: batch, 1: seq},)`；Linalg 用隐式循环 (affine_map)，scf.for 只在 bufferization 后出现
+8. **Linalg→GPU 全链路打通**：5 步 pipeline (bufferize→parallel-loops→gpu-map→gpu-convert→kernel-outline)，GPT-2 产生 832 个 GPU kernel
+9. **transformers 版本兼容性**：新版 (5.13) GPT-2 引入 DynamicCache 和 aten.diff → 需降级 4.33.0
+10. **Tiling 限制**：prebuilt mlir-opt 缺少 linalg-tile pass；scf-parallel-loop-tiling 在复杂 IR 上破坏 GPU 映射；源码编译 MLIR 是写自定义 Pass 的必由之路
 
 ## 导出 API 使用
 
