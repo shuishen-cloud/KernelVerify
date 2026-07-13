@@ -7,7 +7,7 @@
 探索 MLIR 作为编译器基础设施对 PyTorch 模型的优化潜力，分三阶段：
 1. **阶段一**（W0~W5 ✅）：简单模型 → Torch MLIR → Linalg 优化
 2. **阶段二**（W6~W8 ✅）：GPT-2 → Torch MLIR → Linalg 优化 → 总结报告
-3. **阶段三**（W9~）：多模型验证 + 自定义 Pass + 实际性能测量
+3. **阶段三**（W9~）：聚焦 Linalg 层 — GPU Lowering / 自定义 Pass / kernel 性能
 
 最终目的是学习 MLIR 编译器优化原理，为大模型推理加速积累技术储备。
 
@@ -84,7 +84,10 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
 | W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
-| **W9+ Phase 3** | ⏳ | Qwen 导出 → 自定义 Pass → IREE 性能测量 → 多模型对比 |
+| W9 Linalg→GPU | ⏳ | 学习 Linalg → GPU/LLVM Lowering，在 4060 上编译执行 |
+| W10 自定义 Pass | ⏳ | Linalg tiling/fusion/vectorization Pass 开发 |
+| W11 性能基准 | ⏳ | IREE + Triton 对比，kernel 级性能测量 |
+| W12 LeetGPU 集成 | ⏳ | GPU 加速基础设施，为后续工作提供算力 |
 
 ## 关键发现
 
