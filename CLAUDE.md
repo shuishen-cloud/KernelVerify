@@ -88,8 +88,8 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
 | W9 Linalg→GPU | ✅ | Linalg→GPU 全链路打通，GPT-2 产生 832 GPU kernel (27032行)，语法验证通过 |
 | W10 自定义 Pass | ✅ | Tiling 路径已探明；scf-tiling 小 matmul 可用；transform dialect 受限 prebuilt 版本 |
-| W11 性能基准 | ⏳ | IREE + Triton 对比，kernel 级性能测量 |
-| W12 LeetGPU 集成 | ⏳ | GPU 加速基础设施，为后续工作提供算力 |
+| W11 性能基准 | 🚧 | IREE CPU ✅ / Triton GELU kernel 在 4060 跑通 / NVPTX 编译受阻 |
+| W12 LeetGPU 集成 | 🚧 | 4060 CUDA 13.0 + Triton 3.7.0 就绪，NVPTX rebuild 中 |
 
 ## 关键发现
 
@@ -106,7 +106,9 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 8. **Linalg→GPU 全链路打通**：5 步 pipeline (bufferize→parallel-loops→gpu-map→gpu-convert→kernel-outline)，GPT-2 产生 832 个 GPU kernel
 9. **transformers 版本兼容性**：新版 (5.13) GPT-2 引入 DynamicCache 和 aten.diff → 需降级 4.33.0
 10. **Transform dialect tiling**：自编译 MLIR 已含 LinalgTransformOps；完整 tiling→GPU pipeline 通过
-11. **Pass Plugin API**：独立 Pass 编译为 `.so`，入口点 `mlirGetPassPluginInfo()` 返回 `{API版本, 名称, 版本, 注册回调}`，通过 `--load-pass-plugin` 加载
+11. **Pass Plugin API**：独立 Pass 编译为 `.so`，入口点 `mlirGetPassPluginInfo()`，通过 `--load-pass-plugin` 加载
+12. **Triton 3.7.0 API**：`tl.math.erf` 可用，`tl.math.tanh` 不存在 → 改用 `tl.extra.cuda.libdevice.tanh`；单 kernel 性能与 PyTorch 持平
+13. **IREE 版本不兼容**：IREE 20241104 不支持 CUDA 13.0；CPU 后端可用做功能验证，GPU 走纯 MLIR NVPTX 路径
 
 ## 导出 API 使用
 
