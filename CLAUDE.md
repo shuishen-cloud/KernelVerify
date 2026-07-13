@@ -52,6 +52,8 @@ pytorch_mlir/
 │       ├── llama/
 │       └── bert/
 ├── passes/                        # 🆕 自定义 MLIR Pass (Phase 3)
+│   ├── CountLinalgOps/            #   第一个 Pass: 统计 Linalg op
+│   └── build_count_pass.sh        #   编译脚本
 ├── triton/                        # 🆕 Triton kernel 实验 (Phase 3)
 ├── benchmarks/                    # 🆕 性能基准测试数据
 ├── tools/                         # Shell 工具脚本
@@ -103,7 +105,8 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 7. **动态 shape 导出**：`dynamic_shapes` 参数需用 tuple 格式 `({0: batch, 1: seq},)`；Linalg 用隐式循环 (affine_map)，scf.for 只在 bufferization 后出现
 8. **Linalg→GPU 全链路打通**：5 步 pipeline (bufferize→parallel-loops→gpu-map→gpu-convert→kernel-outline)，GPT-2 产生 832 个 GPU kernel
 9. **transformers 版本兼容性**：新版 (5.13) GPT-2 引入 DynamicCache 和 aten.diff → 需降级 4.33.0
-10. **Tiling 限制**：prebuilt mlir-opt 缺少 linalg-tile pass；scf-parallel-loop-tiling 在复杂 IR 上破坏 GPU 映射；源码编译 MLIR 是写自定义 Pass 的必由之路
+10. **Transform dialect tiling**：自编译 MLIR 已含 LinalgTransformOps；完整 tiling→GPU pipeline 通过
+11. **Pass Plugin API**：独立 Pass 编译为 `.so`，入口点 `mlirGetPassPluginInfo()` 返回 `{API版本, 名称, 版本, 注册回调}`，通过 `--load-pass-plugin` 加载
 
 ## 导出 API 使用
 
