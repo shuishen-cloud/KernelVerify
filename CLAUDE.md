@@ -4,9 +4,10 @@
 
 ## 项目目标
 
-探索 MLIR（Multi-Level Intermediate Representation）作为编译器基础设施对 PyTorch 模型的优化潜力，分两阶段：
-1. **阶段一**（W0~W5 ✅）：简单模型 → Torch MLIR → Linalg 优化 → 量化验证
-2. **阶段二**（W6~W8 ⏳）：GPT-2 → Torch MLIR → Linalg 优化 → 总结报告
+探索 MLIR 作为编译器基础设施对 PyTorch 模型的优化潜力，分三阶段：
+1. **阶段一**（W0~W5 ✅）：简单模型 → Torch MLIR → Linalg 优化
+2. **阶段二**（W6~W8 ✅）：GPT-2 → Torch MLIR → Linalg 优化 → 总结报告
+3. **阶段三**（W9~）：多模型验证 + 自定义 Pass + 实际性能测量
 
 最终目的是学习 MLIR 编译器优化原理，为大模型推理加速积累技术储备。
 
@@ -30,20 +31,32 @@ pytorch_mlir/
 │   ├── 项目设计.md                  # 架构设计、验证方法、环境依赖
 │   ├── 工作划分.md                  # 任务分解与风险评估
 │   ├── 进度管理.md                  # 进度追踪与异常记录
-│   ├── 优化效果对比.md              # W5: 阶段一优化效果报告
+│   ├── archive/                    # 已完成阶段的产出归档
+│   │   ├── 优化效果对比_简单模型.md   # W5: 阶段一优化效果报告
+│   │   ├── 优化效果对比_GPT2.md      # W6-W7: 阶段二优化效果报告
+│   │   └── 总结报告_阶段一二.md       # W8: 阶段一二汇总
 │   └── task/                       # 专项任务讨论
 │       └── 任务&讨论-GPT2导出.md     # W6: GPT-2 导出实施方案
-├── scripts/                       # Python 导出脚本
-│   ├── export_simple_model.py     # W3: 简单模型 → Torch MLIR (batch)
-│   └── export_gpt2.py             # W6: GPT-2 → Torch MLIR (待实现)
+├── scripts/                       # Python 导出/验证脚本
+│   ├── export_simple_model.py     # W3: 简单模型 → Torch MLIR
+│   ├── export_gpt2_step2.py       # W6: GPT-2 → Torch MLIR
+│   └── verify_gpt2.py             # W6: GPT-2 功能验证
 ├── models/                        # PyTorch 模型定义
 │   └── simple_models.py           # W3: LinearReLU, ConvBNReLU, TwoLayerMLP
 ├── mlir/
 │   ├── handwritten/               # W2: 手写 Torch Dialect MLIR
-│   └── exported/                  # PyTorch 导出的 MLIR
+│   ├── exported/                  # W3/W6: 导出的 Torch Dialect IR
+│   ├── lowered/                   # W4-W7: Lowering + 优化后的 IR
+│   └── models/                    # 🆕 按模型组织的新 IR
+│       ├── qwen/
+│       ├── llama/
+│       └── bert/
+├── passes/                        # 🆕 自定义 MLIR Pass (Phase 3)
+├── triton/                        # 🆕 Triton kernel 实验 (Phase 3)
+├── benchmarks/                    # 🆕 性能基准测试数据
 ├── tools/                         # Shell 工具脚本
 │   ├── verify_mlir.sh             # W2: MLIR 语法验证
-│   └── lower_and_opt.sh           # W4: Lowering + 优化 pipeline (3 策略)
+│   └── lower_and_opt.sh           # W4: Lowering + 优化 pipeline
 └── .gitignore
 ```
 
@@ -68,9 +81,10 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W3 简单模型导出 | ✅ | 3 个模型 (linear_relu/conv_bn_relu/two_layer_mlp) 全部导出 |
 | W4 Lowering Pipeline | ✅ | 3 策略对比，default (fuse+cse) 最优 |
 | W5 优化效果对比 | ✅ | 平均 25.8% linalg op 降低，最高 50% (add_relu) |
-| W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，0 torch.operator 兜底，linalg ops 降低 52.3% |
+| W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
-| W8 总结报告 | ✅ | 全项目汇总报告已完成，见 `work/总结报告.md` |
+| W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
+| **W9+ Phase 3** | ⏳ | 多模型验证 + 自定义 Pass + 实际性能测量 |
 
 ## 关键发现
 
