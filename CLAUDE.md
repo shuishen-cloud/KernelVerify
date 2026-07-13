@@ -84,7 +84,7 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，linalg ops 降低 52.3% |
 | W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
 | W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
-| **W9+ Phase 3** | ⏳ | 多模型验证 + 自定义 Pass + 实际性能测量 |
+| **W9+ Phase 3** | ⏳ | Qwen 导出 → 自定义 Pass → IREE 性能测量 → 多模型对比 |
 
 ## 关键发现
 
