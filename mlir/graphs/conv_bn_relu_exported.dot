@@ -1,0 +1,25 @@
+digraph conv_bn_relu_exported {
+rankdir=TB;
+p_conv_weight [label="{name=%p_conv_weight|op_code=placeholder\n|target=p_conv_weight\n|num_users=1\n|dtype=torch.float32\n|shape=(16, 3, 3, 3)\n|requires_grad=True\n|stride=(27, 9, 3, 1)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+p_conv_bias [label="{name=%p_conv_bias|op_code=placeholder\n|target=p_conv_bias\n|num_users=1\n|dtype=torch.float32\n|shape=(16,)\n|requires_grad=True\n|stride=(1,)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+p_bn_weight [label="{name=%p_bn_weight|op_code=placeholder\n|target=p_bn_weight\n|num_users=1\n|dtype=torch.float32\n|shape=(16,)\n|requires_grad=True\n|stride=(1,)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+p_bn_bias [label="{name=%p_bn_bias|op_code=placeholder\n|target=p_bn_bias\n|num_users=1\n|dtype=torch.float32\n|shape=(16,)\n|requires_grad=True\n|stride=(1,)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+b_bn_running_mean [label="{name=%b_bn_running_mean|op_code=placeholder\n|target=b_bn_running_mean\n|num_users=1\n|dtype=torch.float32\n|shape=(16,)\n|requires_grad=False\n|stride=(1,)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+b_bn_running_var [label="{name=%b_bn_running_var|op_code=placeholder\n|target=b_bn_running_var\n|num_users=1\n|dtype=torch.float32\n|shape=(16,)\n|requires_grad=False\n|stride=(1,)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+b_bn_num_batches_tracked [label="{name=%b_bn_num_batches_tracked|op_code=placeholder\n|target=b_bn_num_batches_tracked\n|num_users=0\n|dtype=torch.int64\n|shape=()\n|requires_grad=False\n|stride=()\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+x [label="{name=%x|op_code=placeholder\n|target=x\n|num_users=1\n|dtype=torch.float32\n|shape=(1, 3, 32, 32)\n|requires_grad=False\n|stride=(3072, 1024, 32, 1)\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+conv2d [label="{name=%conv2d|op_code=call_function\n|target=torch.ops.aten.conv2d.default\n|args=(\l[1, 1],\n[1, 1],\n)\l|num_users=1\n|dtype=torch.float32\n|shape=(1, 16, 32, 32)\n|requires_grad=True\n|stride=(16384, 1024, 32, 1)\n}", shape=record, fillcolor=Coral, style="filled,rounded", fontcolor="#000000"];
+batch_norm [label="{name=%batch_norm|op_code=call_function\n|target=torch.ops.aten.batch_norm.default\n|args=(\lFalse,\n0.1,\n1e-05,\nFalse,\n)\l|num_users=1\n|dtype=torch.float32\n|shape=(1, 16, 32, 32)\n|requires_grad=True\n|stride=(16384, 1024, 32, 1)\n}", shape=record, fillcolor=Coral, style="filled,rounded", fontcolor="#000000"];
+relu [label="{name=%relu|op_code=call_function\n|target=torch.ops.aten.relu.default\n|num_users=1\n|dtype=torch.float32\n|shape=(1, 16, 32, 32)\n|requires_grad=True\n|stride=(16384, 1024, 32, 1)\n}", shape=record, fillcolor=Thistle3, style="filled,rounded", fontcolor="#000000"];
+output [label="{name=%output|op_code=output\n|target=output\n|num_users=0\n}", shape=record, fillcolor=PowderBlue, style="filled,rounded", fontcolor="#000000"];
+p_conv_weight -> conv2d;
+p_conv_bias -> conv2d;
+p_bn_weight -> batch_norm;
+p_bn_bias -> batch_norm;
+b_bn_running_mean -> batch_norm;
+b_bn_running_var -> batch_norm;
+x -> conv2d;
+conv2d -> batch_norm;
+batch_norm -> relu;
+relu -> output;
+}

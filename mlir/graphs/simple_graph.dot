@@ -1,0 +1,15 @@
+digraph simple_graph {
+rankdir=TB;
+x [label="{name=%x|op_code=placeholder\n|target=x\n|num_users=1\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+add [label="{name=%add|op_code=call_function\n|target=_operator.add\n|args=(1.0,)|num_users=2\n}", shape=record, fillcolor=Wheat1, style="filled,rounded", fontcolor="#000000"];
+mul [label="{name=%mul|op_code=call_function\n|target=_operator.mul\n|args=(2.0,)|num_users=1\n}", shape=record, fillcolor=MistyRose2, style="filled,rounded", fontcolor="#000000"];
+relu [label="{name=%relu|op_code=call_method\n|target=relu\n|num_users=1\n}", shape=record, fillcolor=PeachPuff1, style="filled,rounded", fontcolor="#000000"];
+add_1 [label="{name=%add_1|op_code=call_function\n|target=_operator.add\n|num_users=1\n}", shape=record, fillcolor=Wheat1, style="filled,rounded", fontcolor="#000000"];
+output [label="{name=%output|op_code=output\n|target=output\n|num_users=0\n}", shape=record, fillcolor=PowderBlue, style="filled,rounded", fontcolor="#000000"];
+x -> add;
+add -> mul;
+add -> add_1;
+mul -> relu;
+relu -> add_1;
+add_1 -> output;
+}

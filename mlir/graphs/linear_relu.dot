@@ -1,0 +1,14 @@
+digraph linear_relu {
+rankdir=TB;
+x [label="{name=%x|op_code=placeholder\n|target=x\n|num_users=1\n}", shape=record, fillcolor="AliceBlue", style="filled,rounded", fontcolor="#000000"];
+linear [label="{name=%linear|op_code=call_module\n\ntorch.nn.modules.linear.Linear\n|in_features: 10\nout_features: 5\n}", shape=record, fillcolor=LemonChiffon1, style="filled,rounded", fontcolor="#000000"];
+"linear.weight" [label="{linear.weight|op_code=get_parametertorch.float32[5, 10]\n}", fillcolor=Salmon, style="filled,rounded", fontcolor="#000000", shape=record];
+"linear.weight" -> linear;
+"linear.bias" [label="{linear.bias|op_code=get_parametertorch.float32[5]\n}", fillcolor=Salmon, style="filled,rounded", fontcolor="#000000", shape=record];
+"linear.bias" -> linear;
+relu [label="{name=%relu|op_code=call_function\n|target=torch.relu\n|num_users=1\n}", shape=record, fillcolor=Thistle1, style="filled,rounded", fontcolor="#000000"];
+output [label="{name=%output|op_code=output\n|target=output\n|num_users=0\n}", shape=record, fillcolor=PowderBlue, style="filled,rounded", fontcolor="#000000"];
+x -> linear;
+linear -> relu;
+relu -> output;
+}
