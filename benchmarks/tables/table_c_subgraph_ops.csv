@@ -1,0 +1,58 @@
+op_name,op_type,shape,n_consumers,consumers,fusion_notes
+aten.layer_norm.default,REDUCTION,"[1, 8, 128]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[8, 128]",1,aten.addmm.default [MATMUL],reshape boundary
+aten.addmm.default,MATMUL,"[8, 384]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 384]",1,aten.split.Tensor [VIEW],reshape boundary
+aten.split.Tensor,VIEW,"[1, 8, 128]",3,<built-in function getitem> [OTHER]; <built-in function getitem> [OTHER]; <built-in function getitem> [OTHER],⚠️ multi-consumer (3)
+<built-in function getitem>,OTHER,"[1, 8, 128]",1,aten.view.default [VIEW],
+<built-in function getitem>,OTHER,"[1, 8, 128]",1,aten.view.default [VIEW],
+<built-in function getitem>,OTHER,"[1, 8, 128]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 4, 32]",1,aten.permute.default [VIEW],reshape boundary
+aten.permute.default,VIEW,"[1, 4, 8, 32]",1,aten.matmul.default [MATMUL],reshape boundary
+aten.view.default,VIEW,"[1, 8, 4, 32]",1,aten.permute.default [VIEW],reshape boundary
+aten.permute.default,VIEW,"[1, 4, 8, 32]",1,aten.transpose.int [VIEW],reshape boundary
+aten.view.default,VIEW,"[1, 8, 4, 32]",1,aten.permute.default [VIEW],reshape boundary
+aten.permute.default,VIEW,"[1, 4, 8, 32]",1,aten.matmul.default [MATMUL],reshape boundary
+aten.transpose.int,VIEW,"[1, 4, 32, 8]",1,aten.matmul.default [MATMUL],reshape boundary
+aten.matmul.default,MATMUL,"[1, 4, 8, 8]",1,aten.div.Tensor [ELEMENTWISE],
+aten.full.default,OTHER,[],1,aten.div.Tensor [ELEMENTWISE],
+aten.div.Tensor,ELEMENTWISE,"[1, 4, 8, 8]",2,aten.to.dtype [MEMORY]; aten._assert_tensor_metadata.default [OTHER],⚠️ multi-consumer (2)
+aten.slice.Tensor,OTHER,"[1, 1, 8, 64]",1,aten.slice.Tensor [OTHER],
+aten.slice.Tensor,OTHER,"[1, 1, 8, 8]",1,aten.where.self [ELEMENTWISE],
+aten.full.default,OTHER,[],2,aten.to.dtype_layout [MEMORY]; aten._assert_tensor_metadata.default [OTHER],⚠️ multi-consumer (2)
+aten._assert_tensor_metadata.default,OTHER,?,0,,
+aten.to.dtype_layout,MEMORY,[],1,aten.where.self [ELEMENTWISE],
+aten._assert_tensor_metadata.default,OTHER,?,0,,
+aten.to.dtype,MEMORY,"[1, 4, 8, 8]",1,aten.where.self [ELEMENTWISE],
+aten.where.self,ELEMENTWISE,"[1, 4, 8, 8]",1,aten.add.Tensor [ELEMENTWISE],✅ chain candidate
+aten.add.Tensor,ELEMENTWISE,"[1, 4, 8, 8]",1,aten.softmax.int [REDUCTION],
+aten.softmax.int,REDUCTION,"[1, 4, 8, 8]",2,aten.to.dtype [MEMORY]; aten._assert_tensor_metadata.default [OTHER],⚠️ multi-consumer (2)
+aten._assert_tensor_metadata.default,OTHER,?,0,,
+aten.to.dtype,MEMORY,"[1, 4, 8, 8]",1,aten.dropout.default [OTHER],
+aten.dropout.default,OTHER,"[1, 4, 8, 8]",1,aten.matmul.default [MATMUL],
+aten.matmul.default,MATMUL,"[1, 4, 8, 32]",1,aten.permute.default [VIEW],
+aten.permute.default,VIEW,"[1, 8, 4, 32]",1,aten.contiguous.default [MEMORY],reshape boundary
+aten.contiguous.default,MEMORY,"[1, 8, 4, 32]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 128]",1,aten.view.default [VIEW],reshape boundary
+aten.view.default,VIEW,"[8, 128]",1,aten.addmm.default [MATMUL],reshape boundary
+aten.addmm.default,MATMUL,"[8, 128]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 128]",1,aten.dropout.default [OTHER],reshape boundary
+aten.dropout.default,OTHER,"[1, 8, 128]",1,aten.add.Tensor [ELEMENTWISE],
+aten.add.Tensor,ELEMENTWISE,"[1, 8, 128]",2,aten.layer_norm.default [REDUCTION]; aten.add.Tensor [ELEMENTWISE],⚠️ multi-consumer (2)
+aten.layer_norm.default,REDUCTION,"[1, 8, 128]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[8, 128]",1,aten.addmm.default [MATMUL],reshape boundary
+aten.addmm.default,MATMUL,"[8, 512]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 512]",3,aten.mul.Tensor [ELEMENTWISE]; aten.pow.Tensor_Scalar [ELEMENTWISE]; aten.add.Tensor [ELEMENTWISE],⚠️ multi-consumer (3)
+aten.mul.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.mul.Tensor [ELEMENTWISE],✅ chain candidate
+aten.pow.Tensor_Scalar,ELEMENTWISE,"[1, 8, 512]",1,aten.mul.Tensor [ELEMENTWISE],✅ chain candidate
+aten.mul.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.add.Tensor [ELEMENTWISE],✅ chain candidate
+aten.add.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.mul.Tensor [ELEMENTWISE],✅ chain candidate
+aten.mul.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.tanh.default [ELEMENTWISE],✅ chain candidate
+aten.tanh.default,ELEMENTWISE,"[1, 8, 512]",1,aten.add.Tensor [ELEMENTWISE],✅ chain candidate
+aten.add.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.mul.Tensor [ELEMENTWISE],✅ chain candidate
+aten.mul.Tensor,ELEMENTWISE,"[1, 8, 512]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[8, 512]",1,aten.addmm.default [MATMUL],reshape boundary
+aten.addmm.default,MATMUL,"[8, 128]",1,aten.view.default [VIEW],
+aten.view.default,VIEW,"[1, 8, 128]",1,aten.dropout.default [OTHER],reshape boundary
+aten.dropout.default,OTHER,"[1, 8, 128]",1,aten.add.Tensor [ELEMENTWISE],
+aten.add.Tensor,ELEMENTWISE,"[1, 8, 128]",1,output [OTHER],

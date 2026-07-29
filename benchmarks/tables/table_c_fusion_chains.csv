@@ -1,0 +1,2 @@
+length,start_shape,chain,savings
+7,"[1, 8, 512]",aten.mul.Tensor → aten.pow.Tensor_Scalar → aten.mul.Tensor → aten.add.Tensor → aten.mul.Tensor → aten.tanh.default → aten.add.Tensor,"-8 kernel launch, -7 中间tensor"
