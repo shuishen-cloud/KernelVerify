@@ -179,11 +179,13 @@ Step 8: git commit -m "feat(W13): {任务描述}"
 
 ## 提交规范
 
+- **每次提交前必须获得用户确认**：展示拟提交的 commit message，等待用户批准后再执行 `git commit`
 - 每完成一个 W 任务立即 `git commit`
 - 文档更新和代码开发分开提交（先 docs: 后 feat:）
 - 格式：`feat(W{n}): {中文描述}` 或 `docs: {中文描述}`
 - 示例：`feat(W3): 批量导出 3 个简单 PyTorch 模型到 Torch Dialect MLIR`
 - 所有 commit 末尾加 `Co-Authored-By: Claude <noreply@anthropic.com>`
+- 执行流程：`git add` → 展示 commit message → 等用户确认 → `git commit`
 
 ## Phase 4 工具链（2026-07-29+）
 
