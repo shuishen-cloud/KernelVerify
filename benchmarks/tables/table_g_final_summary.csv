@@ -1,0 +1,6 @@
+optimization,prof_basis,before,after,speedup,difficulty,impact_score,notes
+GELU Triton (单 kernel),表A: 3.5%GPU / 表B: MEMORY-bound,8 kernel + 7中间tensor,1 kernel + 0中间tensor,—,⭐⭐,⭐⭐⭐,GPT-2内部嵌入 端到端1.08x
+LayerNorm Triton,表A: 1.2%GPU,9 kernel分解,1 kernel warp reduce,—,⭐⭐,⭐,小批量时launch overhead > 计算收益 未嵌入GPT-2
+add+GELU fused (独立验证),表B+表C: MEMORY-bound + add→gelu链,39.0μs (2 kernel),22.6μs (1 kernel),1.72x,⭐⭐,⭐⭐,GPT-2中无此pattern 独立benchmark验证
+add+LN fused (独立验证),表B: MEMORY-bound,20.1μs (10 kernel),13.3μs (1 kernel),1.51x,⭐⭐,⭐⭐,residual add有2consumer 不可嵌入GPT-2
+GPT-2 端到端 (12层GELU替换),表C: 7 ELEMENTWISE单链 (analyze_dataflow确认),8.30ms,7.68ms,1.08x,⭐,⭐⭐⭐,Model Surgery 模块替换 accuracy ✅
