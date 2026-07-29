@@ -47,56 +47,58 @@ def run_profile(model, input_ids, n_warmup=10, n_runs=100):
 
 def parse_profile(prof, model_desc):
     """从 profiler 结果提取关键数据 → 表A"""
-    # 获取按 CUDA 时间排序的 op 列表
     key_avgs = prof.key_averages()
 
-    total_cuda_time = sum(e.cuda_time_total for e in key_avgs)
-    if total_cuda_time == 0:
+    # PyTorch 2.x 属性: self_device_time_total (μs), self_cpu_time_total (μs),
+    #                     self_device_memory_usage (bytes), count
+    total_device_time = sum(e.self_device_time_total for e in key_avgs)
+    if total_device_time == 0:
         print("WARNING: 0 CUDA time recorded. GPU may not be enabled.")
         return []
 
     rows = []
     for e in key_avgs:
-        if e.cuda_time_total == 0:
+        dev_time_us = e.self_device_time_total
+        if dev_time_us == 0:
             continue
-        pct = (e.cuda_time_total / total_cuda_time) * 100
-        avg_us = e.cuda_time_total / e.count / 1000 if e.count > 0 else 0
+        pct = (dev_time_us / total_device_time) * 100
+        avg_us = dev_time_us / e.count if e.count > 0 else 0
 
         rows.append({
             "model": model_desc,
             "op_name": e.key,
-            "cuda_time_ms": round(e.cuda_time_total / 1000, 3),
+            "cuda_time_us": round(dev_time_us, 1),
             "pct_total": round(pct, 1),
             "calls": e.count,
             "avg_us": round(avg_us, 1),
-            "cpu_time_ms": round(e.cpu_time_total / 1000, 3),
-            "cuda_memory_mb": round(e.cuda_memory_usage / 1024 / 1024, 1),
-            "device_self_ms": round(e.self_device_time_total / 1000, 3) if hasattr(e, "self_device_time_total") else 0,
+            "cpu_time_us": round(e.self_cpu_time_total, 1),
+            "cuda_memory_b": round(e.self_device_memory_usage, 0),
+            "cuda_memory_mb": round(e.self_device_memory_usage / 1024 / 1024, 2),
         })
 
-    rows.sort(key=lambda r: r["cuda_time_ms"], reverse=True)
+    rows.sort(key=lambda r: r["cuda_time_us"], reverse=True)
     return rows
 
 
 def write_table(rows, output_path):
     """写入 CSV"""
     fieldnames = [
-        "model", "op_name", "cuda_time_ms", "pct_total", "calls", "avg_us",
-        "cpu_time_ms", "cuda_memory_mb", "device_self_ms",
+        "model", "op_name", "cuda_time_us", "pct_total", "calls", "avg_us",
+        "cpu_time_us", "cuda_memory_mb",
     ]
     with open(output_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
     # Also write a human-readable summary
     print(f"\n{'='*80}")
-    print(f"表A: GPT-2 Op 耗时排名 (top 25 by CUDA time)")
+    print(f"表A: GPT-2 Op 耗时排名 (top 25 by GPU time)")
     print(f"{'='*80}")
-    print(f"{'op_name':<55s} {'cuda_ms':>9s} {'pct':>6s} {'calls':>6s} {'avg_us':>8s} {'mem_mb':>7s}")
+    print(f"{'op_name':<55s} {'gpu_us':>9s} {'pct':>6s} {'calls':>6s} {'avg_us':>8s} {'mem_mb':>7s}")
     print("-" * 80)
     for r in rows[:25]:
-        print(f"{r['op_name']:<55s} {r['cuda_time_ms']:>9.2f} {r['pct_total']:>5.1f}% {r['calls']:>6d} {r['avg_us']:>8.1f} {r['cuda_memory_mb']:>7.1f}")
+        print(f"{r['op_name']:<55s} {r['cuda_time_us']:>9.1f} {r['pct_total']:>5.1f}% {r['calls']:>6d} {r['avg_us']:>8.1f} {r['cuda_memory_mb']:>7.2f}")
     print(f"\nSaved: {output_path} ({len(rows)} rows)")
 
 

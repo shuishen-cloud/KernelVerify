@@ -1,0 +1,4 @@
+model,total_nodes,subgraph,num_ops,ops_chain,memory_read_mb,memory_write_mb,fusible,notes
+GPT2-tiny (2L/128h),154,Attention (QKV project × 12),?,"addmm → addmm → addmm (Q, K, V projections)",4.7,2.3,✅ (3 parallel matmuls),0 addmm total
+GPT2-tiny (2L/128h),154,Attention (Score compute × 12),?,bmm → mul(scale) → add(mask) → softmax → bmm,6.1,3.1,⚠️ (check IR),Scaled dot-product attention; 0 bmm ops
+GPT2-tiny (2L/128h),154,FFN subgraph × 12,?,addmm → gelu → addmm (up → activation → down),12.3,6.1,⚠️,0 GELU activations
