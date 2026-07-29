@@ -78,13 +78,21 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | 阶段 | 状态 | 关键产出 |
 |------|:---:|------|
 | W0~W2 环境与验证 | ✅ | torch-mlir 安装、手写 MLIR 验证通过 |
-| W3 简单模型导出 | ✅ | 3 个模型 (linear_relu/conv_bn_relu/two_layer_mlp) 全部导出 |
+| W3 简单模型导出 | ✅ | 3 个模型全部导出 |
 | W4 Lowering Pipeline | ✅ | 3 策略对比，default (fuse+cse) 最优 |
-| W5 优化效果对比 | ✅ | 平均 25.8% linalg op 降低，最高 50% (add_relu) |
-| W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，linalg ops 降低 52.3% |
-| W7 GPT-2 优化 | ✅ | 标准 GPT-2 (12层/124M) 全链路通过，linalg ops 降低 58.5% |
-| W8 总结报告 | ✅ | 阶段一二汇总，见 `work/archive/总结报告_阶段一二.md` |
-| **W9+ Phase 3** | ⏳ | Qwen 导出 → 自定义 Pass → IREE 性能测量 → 多模型对比 |
+| W5 优化效果对比 | ✅ | 平均 25.8% linalg op 降低 |
+| W6 GPT-2 导出 | ✅ | 极小 GPT-2 全链路通过，ops 降低 52.3% |
+| W7 GPT-2 优化 | ✅ | 标准 GPT-2 全链路通过，ops 降低 58.5% |
+| W8 总结报告 | ✅ | 阶段一二汇总 |
+| W9 Linalg→GPU | ✅ | GPU pipeline 打通；832 kernel，27032 行 |
+| W10 自定义 Pass | ✅ | CountLinalgOps + transform tiling 探明 |
+| W11 性能基准 | ✅ | IREE CPU / Triton GELU / NVPTX 受阻 |
+| W12 模拟新后端 | ✅ | SimNewBackend 融合+展开全链路 |
+| W13 Profiling 基线 | ✅ | torch.profiler + nsys + torch.fx → 表A/B/C |
+| W14 Triton 手动优化 | ⏳ | Attention/GELU/LayerNorm Triton kernel |
+| W15 验证与报告 | ⏳ | 数值验证 + 最终报告 |
+
+当前分支：`phase4-kernel-optimization`
 
 ## 关键发现
 
@@ -116,8 +124,70 @@ result = fx.export_and_import(
 
 `output_type` 选项：`raw` → `torch` → `linalg-on-tensors` → `tosa` → `stablehlo`
 
+## 工作流：文档驱动开发
+
+> **核心原则：先写文档，再开发，再跟踪。所有开发任务必须先在 work/ 三份文档中定义，不允许跳过文档直接写代码。**
+
+### 三份核心文档
+
+| 文档 | 职责 | 更新时机 |
+|------|------|------|
+| `work/工作划分.md` | 任务定义：每个 W 任务的描述、输入、产出、难点、优先级 | 开始新任务前 |
+| `work/进度管理.md` | 进度追踪：状态表（⏳🚧✅❌）、异常记录、执行顺序 | 任务状态变更时 |
+| `work/项目设计.md` | 方法论：架构设计、关键发现、技术决策、验证方法 | 方法论变更时 |
+
+### 执行流程
+
+```
+1. 写文档
+   ├── 工作划分.md: 定义新 W 任务（描述/产出/优先级）
+   ├── 进度管理.md: 添加进度表行（状态=⏳ 或 🚧）
+   └── 项目设计.md: 如有新方法论/架构变更，更新对应章节
+
+2. 开发
+   └── 严格按照工作划分.md 中的"产出"清单编码
+       每个产出对应一个具体文件路径
+
+3. 跟踪
+   ├── 任务完成 → 进度管理.md: 状态改为 ✅，填写完成时间
+   ├── 遇到异常 → 进度管理.md: 添加异常记录
+   └── 有发现 → 项目设计.md: 添加关键发现
+
+4. 提交
+   └── git commit -m "feat(W{n}): {中文描述}"
+       每个 W 任务至少一次 commit
+```
+
+### 示例：开始 W13 的完整流程
+
+```
+Step 1: 编辑 工作划分.md → 添加 W13 任务定义（描述/产出/优先级）
+Step 2: 编辑 进度管理.md → 进度表添加 W13 行（状态=🚧）+ 执行顺序更新
+Step 3: 编辑 项目设计.md → 如有新方法论（如 Phase 4 表格驱动），添加章节
+Step 4: git commit -m "docs: Phase 4 W13 任务定义"
+Step 5: 按工作划分.md 的产出清单编写代码
+Step 6: 运行验证 → 数据写入 benchmarks/ 对应目录
+Step 7: 编辑 进度管理.md → W13 状态改为 ✅ + 完成时间
+Step 8: git commit -m "feat(W13): {任务描述}"
+```
+
 ## 提交规范
 
 - 每完成一个 W 任务立即 `git commit`
-- 格式：`feat(W{n}): {中文描述}`
+- 文档更新和代码开发分开提交（先 docs: 后 feat:）
+- 格式：`feat(W{n}): {中文描述}` 或 `docs: {中文描述}`
 - 示例：`feat(W3): 批量导出 3 个简单 PyTorch 模型到 Torch Dialect MLIR`
+- 所有 commit 末尾加 `Co-Authored-By: Claude <noreply@anthropic.com>`
+
+## Phase 4 工具链（2026-07-29+）
+
+Phase 4 使用纯 PyTorch 生态工具链（MLIR 不参与 profiling/优化循环）：
+
+| 工具 | 用途 | 层面 |
+|------|------|------|
+| `torch.profiler` | op 级耗时、显存 | 计算图 |
+| `nsys` / `ncu` | GPU kernel 级 timeline、occupancy | GPU kernel |
+| `torch.fx` | 计算图捕获、可视化、手动改图 | 计算图 |
+| **Triton 3.7.0** | 手写 GPU kernel、benchmark | GPU kernel |
+
+Phase 4 的 Python 脚本同样在 `novel_llm` 环境下运行。
