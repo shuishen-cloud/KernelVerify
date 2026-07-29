@@ -1,0 +1,18 @@
+kernel,backend,shape,time_us,speedup_vs_pytorch,notes
+GELU erf,PyTorch (cuBLAS),2M,16.9,1.0,基准
+GELU erf,Triton (erf),2M,21.4,1.26,精确GELU
+GELU approx,Triton (tanh),2M,23.8,1.41,"GPT-2默认版本, 1.25x faster"
+add+GELU,PyTorch (2 kernel),2M,39.0,1.0,"add → gelu, 2 kernel + 1中间tensor"
+add+GELU fused,Triton (1 kernel),2M,22.6,0.58,"融合: add+GELU in registers, best BLOCK=1024"
+LayerNorm (single row),PyTorch,1×768,14.0,1.0,~9 kernel分解
+LayerNorm (single row),Triton,1×768,16.3,1.17,1 kernel warp reduce
+add+LayerNorm (single row),PyTorch,1×768,16.9,1.0,add+LN: 10 kernel + 1中间tensor
+add+LayerNorm (single row),Triton fused,1×768,11.6,0.68,融合: add+reduce+norm 1 kernel
+LayerNorm (full seq),PyTorch,128×768,10.6,1.0,~9 kernel分解
+LayerNorm (full seq),Triton,128×768,12.5,1.18,1 kernel warp reduce
+add+LayerNorm (full seq),PyTorch,128×768,20.1,1.0,add+LN: 10 kernel + 1中间tensor
+add+LayerNorm (full seq),Triton fused,128×768,13.3,0.66,融合: add+reduce+norm 1 kernel
+LayerNorm (full batch),PyTorch,8192×768,254.2,1.0,~9 kernel分解
+LayerNorm (full batch),Triton,8192×768,245.5,0.97,1 kernel warp reduce
+add+LayerNorm (full batch),PyTorch,8192×768,620.2,1.0,add+LN: 10 kernel + 1中间tensor
+add+LayerNorm (full batch),Triton fused,8192×768,386.0,0.62,融合: add+reduce+norm 1 kernel

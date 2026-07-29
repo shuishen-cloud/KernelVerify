@@ -179,5 +179,78 @@ def benchmark():
     print(f"  Triton add+LN:     1 kernel (load→add→reduce→norm→store，全部在寄存器/SMEM)")
 
 
+def benchmark_and_collect():
+    """Run all benchmarks and collect structured results for table D."""
+    results = []
+
+    # GPT-2 shapes
+    for M_val, N_val, desc in [(1, 768, "single row"), (128, 768, "full seq"), (8192, 768, "full batch")]:
+        x = torch.randn(M_val, N_val, device="cuda", dtype=torch.float32)
+        residual = torch.randn(M_val, N_val, device="cuda", dtype=torch.float32)
+        weight = torch.randn(N_val, device="cuda", dtype=torch.float32)
+        bias = torch.randn(N_val, device="cuda", dtype=torch.float32)
+        eps = 1e-5
+        y_out = torch.empty_like(x)
+        y_fused = torch.empty_like(x)
+
+        BLOCK_N = triton.next_power_of_2(N_val)
+        grid = (M_val,)
+
+        def bench(fn, warmup=20, measure=200):
+            for _ in range(warmup): fn()
+            torch.cuda.synchronize()
+            s = torch.cuda.Event(enable_timing=True); e = torch.cuda.Event(enable_timing=True)
+            s.record()
+            for _ in range(measure): fn()
+            e.record()
+            torch.cuda.synchronize()
+            return s.elapsed_time(e) / measure * 1000
+
+        us_torch_ln = bench(lambda: torch.nn.functional.layer_norm(x, (N_val,), weight=weight, bias=bias, eps=eps))
+        us_triton_ln = bench(lambda: layernorm_kernel[grid](x, weight, bias, y_out, M_val, N_val, eps, BLOCK_N=BLOCK_N))
+        us_torch_addln = bench(lambda: torch.nn.functional.layer_norm(x + residual, (N_val,), weight=weight, bias=bias, eps=eps))
+        us_triton_fused = bench(lambda: layernorm_add_kernel[grid](x, residual, weight, bias, y_fused, M_val, N_val, eps, BLOCK_N=BLOCK_N))
+
+        results.append({
+            "kernel": f"LayerNorm ({desc})", "backend": "PyTorch", "shape": f"{M_val}×{N_val}",
+            "time_us": round(us_torch_ln, 1), "speedup_vs_pytorch": 1.0, "notes": "~9 kernel分解"
+        })
+        results.append({
+            "kernel": f"LayerNorm ({desc})", "backend": "Triton", "shape": f"{M_val}×{N_val}",
+            "time_us": round(us_triton_ln, 1), "speedup_vs_pytorch": round(us_triton_ln / us_torch_ln, 2),
+            "notes": "1 kernel warp reduce"
+        })
+        results.append({
+            "kernel": f"add+LayerNorm ({desc})", "backend": "PyTorch", "shape": f"{M_val}×{N_val}",
+            "time_us": round(us_torch_addln, 1), "speedup_vs_pytorch": 1.0, "notes": "add+LN: 10 kernel + 1中间tensor"
+        })
+        results.append({
+            "kernel": f"add+LayerNorm ({desc})", "backend": "Triton fused", "shape": f"{M_val}×{N_val}",
+            "time_us": round(us_triton_fused, 1), "speedup_vs_pytorch": round(us_triton_fused / us_torch_addln, 2),
+            "notes": "融合: add+reduce+norm 1 kernel"
+        })
+
+    return results
+
+
+def write_table_d(results, output_path):
+    import csv, os
+    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+    # Append to existing GELU data
+    file_exists = os.path.exists(output_path)
+    with open(output_path, "a", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["kernel", "backend", "shape", "time_us", "speedup_vs_pytorch", "notes"], extrasaction="ignore")
+        if not file_exists:
+            w.writeheader()
+        w.writerows(results)
+    print(f"表D (LayerNorm) appended: {output_path}")
+
+
 if __name__ == "__main__":
-    benchmark()
+    from pathlib import Path
+    table_dir = Path(__file__).resolve().parent.parent / "benchmarks" / "tables"
+    table_dir.mkdir(parents=True, exist_ok=True)
+    benchmark()  # human-readable output
+    results = benchmark_and_collect()
+    output_path = str(table_dir / "table_d_kernel_before_after.csv")
+    write_table_d(results, output_path)

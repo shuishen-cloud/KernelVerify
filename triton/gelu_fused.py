@@ -172,5 +172,33 @@ def benchmark(n=2_000_000, n_runs=200):
     }
 
 
+def write_table_d(results, output_path):
+    """写表D: GELU Kernel 优化前后对比"""
+    import csv, os
+    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+    rows = [
+        {"kernel": "GELU erf", "backend": "PyTorch (cuBLAS)", "shape": "2M",
+         "time_us": round(results["pytorch_us"], 1), "speedup_vs_pytorch": 1.0, "notes": "基准"},
+        {"kernel": "GELU erf", "backend": "Triton (erf)", "shape": "2M",
+         "time_us": round(results["triton_erf_us"], 1), "speedup_vs_pytorch": round(results["triton_erf_us"] / results["pytorch_us"], 2), "notes": "精确GELU"},
+        {"kernel": "GELU approx", "backend": "Triton (tanh)", "shape": "2M",
+         "time_us": round(results["triton_approx_us"], 1), "speedup_vs_pytorch": round(results["triton_approx_us"] / results["pytorch_us"], 2), "notes": "GPT-2默认版本, 1.25x faster"},
+        {"kernel": "add+GELU", "backend": "PyTorch (2 kernel)", "shape": "2M",
+         "time_us": round(results["pytorch_addgelu_us"], 1), "speedup_vs_pytorch": 1.0, "notes": "add → gelu, 2 kernel + 1中间tensor"},
+        {"kernel": "add+GELU fused", "backend": "Triton (1 kernel)", "shape": "2M",
+         "time_us": round(results["triton_fused_us"], 1), "speedup_vs_pytorch": round(results["triton_fused_us"] / results["pytorch_addgelu_us"], 2),
+         "notes": f"融合: add+GELU in registers, best BLOCK={results['best_block']}"},
+    ]
+    with open(output_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["kernel", "backend", "shape", "time_us", "speedup_vs_pytorch", "notes"])
+        w.writeheader()
+        w.writerows(rows)
+    print(f"\n表D (GELU) saved: {output_path}")
+
+
 if __name__ == "__main__":
-    benchmark()
+    from pathlib import Path
+    table_dir = Path(__file__).resolve().parent.parent / "benchmarks" / "tables"
+    table_dir.mkdir(parents=True, exist_ok=True)
+    results = benchmark()
+    write_table_d(results, str(table_dir / "table_d_kernel_before_after.csv"))
