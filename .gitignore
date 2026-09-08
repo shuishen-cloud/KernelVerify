@@ -16,6 +16,13 @@ build/
 # MLIR artifacts
 *.mlir.tmp
 
+# GPT-2 导出的 MLIR（含 dense_resource 序列化权重，数百 MB，可再生成）
+mlir/exported/gpt2_*.mlir
+mlir/lowered/gpt2_*.mlir
+
+# profiling 大 trace 文件
+benchmarks/results/gpt2_torch_trace.json
+
 # IDE
 .vscode/
 .idea/
