@@ -40,7 +40,8 @@ pytorch_mlir/
 ├── scripts/                       # Python 导出/验证脚本
 │   ├── export_simple_model.py     # W3: 简单模型 → Torch MLIR
 │   ├── export_gpt2_step2.py       # W6: GPT-2 → Torch MLIR
-│   └── verify_gpt2.py             # W6: GPT-2 功能验证
+│   ├── verify_gpt2.py             # W6: GPT-2 功能验证
+│   └── verify_tiling.py           # W16: Tiling 对比度量框架（runner/iree 双后端）
 ├── models/                        # PyTorch 模型定义
 │   └── simple_models.py           # W3: LinearReLU, ConvBNReLU, TwoLayerMLP
 ├── mlir/
@@ -89,10 +90,12 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 | W11 性能基准 | ✅ | IREE CPU / Triton GELU / NVPTX 受阻 |
 | W12 模拟新后端 | ✅ | SimNewBackend 融合+展开全链路 |
 | W13 Profiling 基线 | ✅ | torch.profiler + nsys + torch.fx → 表A/B/C |
-| W14 Triton 手动优化 | ⏳ | Attention/GELU/LayerNorm Triton kernel |
-| W15 验证与报告 | ⏳ | 数值验证 + 最终报告 |
+| W14 Triton 手动优化 | ✅ | 数据流分析 + GELU/LN Triton kernel；端到端 1.08x |
+| W15 验证与报告 | ✅ | 表G + 最终优化报告 |
+| W16 Tiling 验证与度量框架 | ✅ | L1/L2/L3 验证 + CPU 度量框架；tile 16~32 最优 1.46x |
+| W17 GPU 映射修复与 promotion | ⏳ | 约束已探明，待打通 |
 
-当前分支：`phase4-kernel-optimization`
+当前分支：`main`
 
 ## 关键发现
 
@@ -102,6 +105,8 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate novel_llm
 4. **反效果 Pass**：`--linalg-generalize-named-ops` 将命名 op 展开为 generic，op 计数反而增加
 5. **工具分工**：系统 `mlir-opt` 不含 Torch 方言，必须用 `torch-mlir-opt` 验证 Torch Dialect
 6. **自动兜底**：未注册的 op 会被自动转为 `torch.operator` 节点，导入不会崩溃，但无法 lowering
+7. **Tiling 是性能数据可解释的前提**：无 tiling → GPU kernel 全是 `block=(1,1,1)`，测出的数无分析价值（既不能做 roofline 判断，也掩蔽其它优化效果）
+8. **度量某优化时，后端不能自带该优化**：IREE 自身会 tiling/vectorize，预 tiled IR 会被"打断"（慢 9~1000x）；度量 tiling 需用朴素循环后端（`mlir-runner` + `--convert-linalg-to-loops`）
 
 ## 导出 API 使用
 
